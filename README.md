@@ -1,154 +1,132 @@
-# Common Context Structure (CCS)
+# today-market — Stage 1→5 Identity Pipeline Run
 
-**The standard folder structure of a knowledge vault that stores the derivation chain from a concept (Identity) to an executable skill (Skill) as a file-link graph.**
+**오늘마켓 API 명세서 하나를 입력으로, 개념(Identity)부터 실행 가능한 스킬(Skill)까지의 파생 체인을 자동 도출한 정체성 파이프라인(1→5단계)의 실제 실행 결과 저장소입니다.**
 
-Every concept is completed into an executable skill through a five-stage derivation chain, and each stage is recorded as exactly one markdown file with explicit links. A skill is never a file written from someone's head — it is the **terminus of a chain**.
+이 저장소는 파이프라인의 **runRoot**(실행별 작업 폴더)이며, 모든 산출물은 아래 5단계를 거쳐 생성되었습니다. 스킬은 사람이 임의로 작성한 파일이 아니라 **체인의 종착점**입니다.
 
 ```
 Identity ──definesGoal──▶ Goal ──requiresTask──▶ Task ──requiresKnowledge──▶ Knowledge ──appliedThrough──▶ Method ──developsSkill──▶ Skill
-(concept)                 (goal)                 (task)                      (knowledge)                   (method)                   (skill)
+(개념)                    (목표)                  (작업)                       (지식/기준)                    (방법/절차)                 (스킬)
 ```
 
 ---
 
-## Conceptual Foundation — the Knowledge–Action Chain (KAC)
+## 파이프라인 구조 (1→5단계)
 
-This repository is the **concrete implementation** of the concepts defined in
-**[The Knowledge–Action Chain (KAC)](https://github.com/sopia19910/Knowledge-Action-Chain)** — an AX execution
-ontology along which validated knowledge is derived into a Skill, compiled into an executable Runtime, and
-verified through action, outcome, review, and feedback:
+파이프라인은 3개의 봉인된 멤버가 직렬로 1회씩 실행되는 루프-프리 컴포지트입니다. 반복은 멤버 2/3의 내부 절차에만 존재합니다.
 
 ```
-KAC = ⟨ KC_ext, SDC, R, A, P, Ω, V, F, DC_D(t+1) ⟩
+[입력: _input 문서 코퍼스 + 동결된 _identity 스냅샷]
+        │
+        ▼
+멤버 1 ─ 진단 HEAD (S1 → S2 → S3 → 4-DIAG)
+  S1  후보 추출        문서에서 정체성 후보 추출, C0 로스터(KEEP+MANUAL) 확정
+  S2  정체성 분할      후보를 단일 축으로 분할/병합 판정 → C1 출력 세트
+  S3  지식 체인 정렬   관계 간선 기반 위상 정렬 → CandidateSetForStage4 로스터
+  4-DIAG 표면 진단     시뮬레이션 전용(클로저 미발행), 중복/포함/개념희석 진단
+        │                → Stage5HandoffPacket (승인 세트 + 호출 순서)
+        ▼  E1 (선택적 diagnose-then-build 게이트: 승인 세트 ⋉ Stage-3 로스터)
+멤버 2 ─ candidate_sweep (후보별 4-EXEC 루프, 엄격 직렬·실패 시 중단)
+  각 후보를 _identity → _goal → _task → _knowledge → _method → _skill
+  6-파일 클로저 체인으로 발행하고 후보별 검증(PASS)으로 봉인
+        │
+        ▼  E2 (완료 핸드오프: minted-PASS 세트 + 매니페스트 순서)
+멤버 3 ─ ledger_culmination (C1 원장 기재 루프 + 완전성 배리어 + C2 1회)
+  피드백 원장 작성 → 스테이지별 패치 지시 → 차기 실행 시드 패킷 봉인
+        │
+        ▼
+[종착점: Stage5NextRunSeedPacket + 검증된 RUN 레코드]
 ```
-
-In KAC terms, **CCS (Common Context Structure) is the common operating grammar every domain context must
-follow** — the root precondition of the whole chain (`DC_D = Instantiate(CCS, D)`). This folder structure is
-that grammar made physical. Each KAC element maps onto a concrete part of this structure:
-
-| KAC concept | Realized here as |
-|---|---|
-| **SDC** — Skill Derivation Chain (`Identity → Goal → Task → Knowledge → Method → Skill`) | The five chain folders `_identity/ _goal/ _task/ _knowledge/ _method/` terminating in `_skill/` — one file per stage, linked both ways |
-| **Skill** — a derived capability requirement, not yet execution | `_skill/<name>_skill/SKILL.md` — the canonical, chain-grounded skill definition |
-| **SkillRuntime** — the execution contract that makes a Skill invocable | The deployed callable package produced through the six `_deploy/` stages and landed in the runtime skills registry (entry `SKILL.md` + `_members/`, self-contained, zero dangling links) |
-| **ValidKAC** — segment-by-segment validity gates | `_deploy/_verification/` three-gate AND verdict (masked-byte-identity / package-resolution / registry-callability → PROVEN, land only on PROVEN) — the deployment-side realization of "each segment must be verified" |
-| **Trace / Record** — execution must leave standing records | `_entity/` (the full authoring audit trail of every composite) + `_deploy/_record/` (vault-independent deployment records) |
-| **KC_ext → SDC entry** — validated knowledge enters the chain | The `_input` document corpus consumed by the identity pipeline, which extracts identity candidates and derives their chains |
-| **ActionEvent / OutputObject / OutcomeObject / Review / Feedback / Context Update** | Run-time objects: they occur when deployed skills execute against a **domain context** (`DC_D`), landing under that domain's own runRoot — never inside this canonical structure |
-
-> *A knowledge chain is a path of knowledge; a knowledge–action chain is the path along which knowledge is
-> verified through action.* This structure holds the knowledge-side of that path in verifiable, file-linked
-> form — so that what executes downstream (Runtime, Action, Outcome) always traces back to why it exists.
 
 ---
 
-## Folder Structure
+## 이번 실행 결과 (2026-08-03)
+
+- **입력**: [`_input/_document/오늘마켓_API_명세서.md`](_input/_document/) — 문서 1건
+- **동결 `_identity` 스냅샷**: 빈 레지스트리 (첫 실행)
+- **runID**: `stage1_20260803_todaymarket_purchase_api` (S1 내부 발급)
+
+| 단계 | 결과 | 게이트 |
+|---|---|---|
+| S1 후보 추출 | 후보 15 → KEEP 7 / MANUAL 3 / DROP 5, C0 로스터 10행 | PASS |
+| S2 정체성 분할 | C1 = 10 (KEEP 6 + SPLIT 조각 4), ManualReview 3 | PASS |
+| S3 지식 체인 정렬 | CandidateSetForStage4 10행 위상 정렬 | PASS |
+| 4-DIAG 표면 진단 | 45쌍 전수 진단, 승인 9/10 (`todaymarket_api_server` 과광범위 부모로 제외) | PASS |
+| 멤버 2 스윕 (4-EXEC ×9) | 9/9 minted-PASS — 클로저 파일 54개 + 검증 아티팩트 9개 | PASS |
+| 멤버 3 원장 완결 | 원장 9건 기재, 배리어 HELD, C2 1회 — **무변경 시드** (4개 스테이지 전부 NO_FEEDBACK_NEEDED) | PASS |
+
+### 도출된 정체성 9개 (호출 순서)
+
+1. `PRODUCT` — 상품
+2. `PURCHASE_REQUEST` — 구매 요청
+3. `ERROR_RESPONSE` — 오류 응답
+4. `ROOT_PAGE_ENDPOINT` — 웹페이지 제공 엔드포인트
+5. `PRODUCT_LIST_ENDPOINT` — 상품 목록 조회 엔드포인트
+6. `AMOUNT_VALIDATION` — 금액 검증
+7. `PURCHASE_ENDPOINT` — 상품 구매 처리 엔드포인트
+8. `PURCHASE_RECORD` — 구매 기록
+9. `PURCHASE_HISTORY_ENDPOINT` — 구매 내역 조회 엔드포인트
+
+각 정체성은 `_identity/<NAME>.md`부터 `_skill/<NAME>/SKILL.md`까지 6-파일 클로저 체인을 완결했습니다.
+(`todaymarket_api_server`는 4개 엔드포인트 자식을 흡수할 위험이 있어 스킬화에서 제외되고, 경계 재설정 피드백으로 기록되었습니다.)
+
+---
+
+## 폴더 구조
 
 ```
-Common Context Structure\
+today-market\  (= runRoot)
 │
-│  ◆ Chain entry (what the structure consumes to begin)
+│  ◆ 체인 입력
 ├── _input\
-│   └── _document\    Supplied readable documents — the corpus        <name>.md
-│                     the identity pipeline consumes.
+│   └── _document\    파이프라인이 소비하는 문서 코퍼스        오늘마켓_API_명세서.md
 │
-│  ◆ Derivation chain (one file per concept in each folder)
-├── _identity\        Concept definitions — the root of everything.   <UPPERCASE_CONCEPT>.md
-├── _goal\            Chain stage 1: goal.                            <concept>_goal.md
-├── _task\            Chain stage 2: task.                            <concept>_task.md
-├── _knowledge\       Chain stage 3: knowledge (criteria).            <concept>_knowledge.md
-├── _method\          Chain stage 4: method (procedure).              <concept>_method.md
-├── _skill\           Chain terminus: canonical skills.               <name>_skill\SKILL.md
-│                     └─ composites also carry edges\<edge>_invocation_skill\SKILL.md
+│  ◆ 파생 체인 (개념당 각 폴더에 파일 1개)
+├── _identity\        개념 정의 — 모든 것의 뿌리               <UPPERCASE_CONCEPT>.md
+├── _goal\            체인 1단계: 목표                          <concept>_goal.md
+├── _task\            체인 2단계: 작업                          <concept>_task.md
+├── _knowledge\       체인 3단계: 지식(판정 기준)               <concept>_knowledge.md
+├── _method\          체인 4단계: 방법(절차)                    <concept>_method.md
+├── _skill\           체인 종착점: 스킬                         <NAME>\SKILL.md
 │
-│  ◆ Composite authoring records (9 stages of skill bundling, one file per stage)
-├── _entity\
-│   ├── _suite\          1. member grouping                <name>_suite.md
-│   ├── _edge\           2. dependency-edge identification <name>_edge.md
-│   ├── _sequence\       3. execution-order composition    <name>_sequence.md
-│   ├── _mode\           4. sync/parallel classification   <name>_mode.md
-│   ├── _sync\           5a. synchronous guarantees        <name>_sync.md
-│   ├── _async\          5b. parallel fan-out/join         <name>_async.md (fork-shaped composites only)
-│   ├── _invocation\     6. invocation plan                <name>_invocation.md
-│   ├── _agent\          7. context assignment             <name>_agent.md
-│   ├── _workflow\       8. workflow assembly              <name>_workflow.md
-│   ├── _composite\      9. sealed interface               <name>_composite.md
-│   └── _record\         authoring-run state records       <name>_authoring_run.md
+│  ◆ 실행 산출물 (파이프라인이 봉인한 아티팩트)
+├── _artifact\
+│   ├── <stamp>_stage1_..._artifact.md            S1 봉인 아티팩트 (C0 로스터)
+│   ├── <stamp>_stage2_..._artifact.md            S2 봉인 아티팩트 (C1)
+│   ├── <stamp>_stage3_..._artifact.md            S3 봉인 아티팩트 (Stage-4 로스터)
+│   ├── <stamp>_stage4_diag_*.md                  4-DIAG 진단 아티팩트 6종
+│   ├── stage4_<n>_<name>_..._artifact.md         후보별 4-EXEC 클로저 검증 (×9)
+│   ├── stage4_concept_to_skill_closure_manifest.md   스윕 매니페스트(누산기)
+│   ├── stage5_<n>_<name>_..._artifact.md         후보별 피드백 레코드 (×9)
+│   ├── stage5_feedback_ledger.md                 피드백 원장
+│   ├── stage5_stage{1..4}_patch_instruction.md   스테이지별 패치 지시 (이번 실행: 전부 빈 상태)
+│   ├── stage5_next_run_seed_packet.md            차기 실행 시드 패킷 (미소비)
+│   └── stage5_run_record.md                      검증된 RUN 레코드
 │
-│  ◆ Deployment staging (canonical → runtime registry, 6 stages)
-└── _deploy\
-    ├── _closure\        1. closure confirmation           <stamp>_<skill>_closure.md
-    ├── _baseline\       2. baseline snapshot (container)  …_baseline\ = runtime package + _chain\ + manifest.md
-    ├── _transform\      3. transform (container)          …_transform\<skill>\ = lean registry-bound package
-    ├── _verification\   4. three-gate verification        <stamp>_<skill>_account.md (PROVEN/UNPROVEN)
-    ├── _landing\        5. landing fact                   <stamp>_<skill>_landing.md
-    └── _record\         6. deployment record (vault-side) <stamp>_<skill>_record.md
+│  ◆ 예약 구조 (기계류 자리 — 이번 실행에서는 비어 있음)
+├── _entity\          컴포지트 저작 감사 기록 (suite→…→composite 9단계)
+└── _deploy\          배포 스테이징 (closure→…→record 6단계)
 ```
 
 ---
 
-## Role of Each Folder
+## 설계 원칙
 
-### 1. Chain entry — `_input/`
+1. **개념 없는 폴더는 없다** — 모든 산출물은 `_identity`의 개념 정의로 소급된다.
+2. **스킬은 체인의 종착점이다** — Identity→Goal→Task→Knowledge→Method를 전방으로 완성한 뒤에만 스킬이 생성된다.
+3. **컴포지트는 루프가 아니다** — 파이프라인 본체는 멤버 3개·엣지 2개의 1회 직렬 실행이며, 모든 반복은 멤버 내부 절차에 산다.
+4. **봉인 후 읽기(finalize-then-read)** — 다음 멤버는 이전 멤버의 PASS 게이트로 봉인된 아티팩트만, 섹션 제목으로 위치를 찾아 읽는다.
+5. **실패 시 전체 중단** — 어느 멤버든 자기 게이트에 실패하면 이후 엣지는 발화하지 않고 실행 전체가 STOP된다.
+6. **시드는 소비하지 않는다** — 차기 실행 시드 패킷의 적용은 다음 실행의 사전 단계 소유이며, 이번 실행 내부에서는 반환 엣지가 존재하지 않는다.
+7. **모든 링크는 검증된다** — 체인·로스터·아티팩트 링크는 dangling 0을 유지한다.
 
-What the structure **consumes to begin** — the counterpart to what it produces. An input is named at the boundary, before any internal step: it is what the chain presupposes rather than derives.
+## 명명 규칙
 
-| Folder | Role | File contents |
-|---|---|---|
-| `_input/_document/` | The supplied readable-document corpus. The identity pipeline reads it to extract identity candidates, which then enter the derivation chain at `_identity/` | Authored prose meant to be read by a person — distinct from a data file, a runtime record, or executable |
-
-Nothing here is derived by this structure; everything here is handed in from outside it. The folder stands even while empty — the concept is declared (`_identity/INPUT.md`, `_identity/DOCUMENT.md`), so the seat exists before anything occupies it.
-
-### 2. Derivation chain — `_identity` → `_goal` → `_task` → `_knowledge` → `_method`
-
-| Folder | Role | File contents | Chain links |
-|---|---|---|---|
-| `_identity/` | Declares every concept in the workspace as **one concept = one file**. Every folder, chain, and skill traces back here | Meaning (what it IS / is NOT) · Boundary (fences against neighboring concepts) · Entity Home Pattern (where instances live) · Skill Derivation | `→ definesGoal` |
-| `_goal/` | What the concept aims at | What this concept is trying to achieve | `← definesGoal` / `→ requiresTask` |
-| `_task/` | The action the goal requires | The concrete action needed to reach the goal (stated in steps) | `← requiresTask` / `→ requiresKnowledge` |
-| `_knowledge/` | The judgment criteria the task presupposes | The validity-criteria list — what counts as PASS/FAIL | `← requiresKnowledge` / `→ appliedThrough` |
-| `_method/` | The procedure that applies the knowledge | Numbered procedure steps (including STOP conditions) | `← appliedThrough` / `→ developsSkill` |
-
-### 3. Canonical skills — `_skill/`
-
-| Kind | Location | Contents |
-|---|---|---|
-| Canonical skill | `_skill/<name>_skill/SKILL.md` (folder name == frontmatter `name:`) | An **atomic** skill states its own Procedure; a **composite** skill states its member/edge roster and the sealed interface (INTERFACE / HIDDEN WORKFLOW) |
-| Edge callers | `_skill/<composite>_skill/edges/<edge>_invocation_skill/SKILL.md` | Own the calling behavior between composite members (atomic members stay unchanged): producer→consumer order · finalize-then-read guarantee · value-level bindings · PASS-only gates |
-
-### 4. Composite authoring records — `_entity/`
-
-The stage-by-stage outputs of the skill-bundling route **SUITE→EDGE→SEQUENCE→MODE→SYNC/ASYNC→INVOCATION→AGENT→WORKFLOW→COMPOSITE**, kept in per-type subfolders. Each authored composite leaves one `<name>_<type>.md` file in each subfolder — its complete audit trail. Every entity file carries the `## Links` contract (identity / producedBy / usesSkill / reads / writes / nextSkill / nextInput).
-
-### 5. Deployment staging — `_deploy/`
-
-The six stages that export a canonical skill to the runtime registry. **Landing (stage 5) happens only when verification (stage 4) reads PROVEN.**
-
-| Stage | Folder | What it does |
-|---|---|---|
-| 1 | `_closure/` | Enumerate and confirm the skill's runtime dependency set (SKILL.md→SKILL.md) to its fixed point |
-| 2 | `_baseline/` | Self-contained baseline snapshot — runtime package + derivation chain (`_chain/`) + `manifest.md`, links re-anchored |
-| 3 | `_transform/` | The lean registry-bound package — runtime links kept, provenance links de-linked to plain text (zero dangling) |
-| 4 | `_verification/` | Three-gate AND verdict: masked-byte-identity / package-resolution / registry-callability → PROVEN/UNPROVEN |
-| 5 | `_landing/` | The minimal fact of what was copied to the registry, only on PROVEN (status CALLABLE) |
-| 6 | `_record/` | The vault-side standing record of the deployment event — never placed inside the registry (vault-independent) |
+- 선행 `_` = **폴더 표식** — 파일명에는 절대 사용하지 않는다
+- 정체성 파일은 `_identity/<UPPERCASE>.md`, 체인 파일은 `<concept>_<stage>.md`
+- 스킬은 `_skill/<NAME>/SKILL.md`
+- 실행 아티팩트는 `<YYYYMMDD_HHMMSS>_<stage>_..._artifact.md` (스탬프는 실행 시각)
 
 ---
 
-## Design Principles
-
-1. **No folder exists without a concept** — every folder name matches a backing `_identity/<UPPERCASE>.md` exactly. To create a folder, define the concept first.
-2. **A skill is the terminus of a chain** — a skill is generated only after Identity→Goal→Task→Knowledge→Method has been built forward.
-3. **Canonical and copies are separated** — this structure holds canonicals only. Executable copies leave through the six `_deploy` stages into the runtime registry, and domain run outputs land under a separate runRoot, never written back into the canonical vault.
-4. **Every link is verified** — chain, member, and edge links are kept at zero dangling.
-
-## Naming Laws
-
-- Leading `_` = **folder marker** — never used in a file name (no exceptions)
-- Folder name ↔ backing `_identity/<UPPERCASE>.md` must match exactly
-- Skill folders are `<name>_skill`, and the folder name == the frontmatter `name:` field
-- Direct `_deploy` stage artifacts are named `<stamp>_<source_skill>_<stage>.md` (baseline/transform are container folders)
-
----
-
-> This repository is the **structural skeleton** of CCS. For the full specification of the living reference implementation (102 concepts · 98 completed chains · 112 canonical skills · 15 composites · 4 deployed runs, as of 2026-07-07), see `common_context_folder_structure_0.0.2.md`.
+> 이 저장소는 Common Context Structure(CCS) 볼트 문법 위에서 **stage_1_to_5_identity_pipeline** 컴포지트가 1회 실행된 결과입니다. 다음 실행은 시드 패킷(`_artifact/stage5_next_run_seed_packet.md`)을 읽는 것에서 시작합니다 — 이번 시드는 증거 기반 무변경(NO_FEEDBACK_NEEDED ×4)이므로 기계 수정 없이 그대로 재실행하거나 파이프라인을 종료할 수 있습니다.
