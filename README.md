@@ -4,6 +4,8 @@
 
 This repository is the pipeline's **runRoot** (per-run working folder); every artifact here was produced through the five stages below. A skill is never a hand-written file — it is the **terminus of a chain**.
 
+> **Built on [Common Context Structure (CCS)](https://github.com/gesia-platform/Common-Context-Structure)** — the standard vault grammar (folder structure, derivation-chain layout, and naming laws) this run instantiates. CCS provides the common frame; this repository fills it with one concrete pipeline run over the Today Market API specification.
+
 ```
 Identity ──definesGoal──▶ Goal ──requiresTask──▶ Task ──requiresKnowledge──▶ Knowledge ──appliedThrough──▶ Method ──developsSkill──▶ Skill
 (concept)                 (goal)                 (task)                      (knowledge)                   (method)                   (skill)
@@ -130,4 +132,4 @@ today-market\  (= runRoot)
 
 ---
 
-> This repository is the result of ONE invocation of the **stage_1_to_5_identity_pipeline** composite over the Common Context Structure (CCS) vault grammar. The next run starts by reading the seed packet (`_artifact/stage5_next_run_seed_packet.md`) — this run's seed is an evidence-based no-change seed (NO_FEEDBACK_NEEDED ×4), so the pipeline can be rerun unchanged or ended here.
+> This repository is the result of ONE invocation of the **stage_1_to_5_identity_pipeline** composite over the [Common Context Structure (CCS)](https://github.com/gesia-platform/Common-Context-Structure) vault grammar. The next run starts by reading the seed packet (`_artifact/stage5_next_run_seed_packet.md`) — this run's seed is an evidence-based no-change seed (NO_FEEDBACK_NEEDED ×4), so the pipeline can be rerun unchanged or ended here.
